@@ -1,0 +1,662 @@
+[
+{
+  "remarks": "Serverless-Speed-2DNS",
+  "version": {
+    "min": "26.6.27"
+  },
+  "log": {
+    "loglevel": "warning",
+    "dnsLog": false,
+    "access": "none"
+  },
+  "policy": {
+    "levels": {
+      "0": {
+        "uplinkOnly": 0,
+        "downlinkOnly": 0
+      }
+    }
+  },
+  "dns": {
+    "servers": [
+      "1.1.1.1",
+      "9.9.9.9"
+    ],
+    "queryStrategy": "UseIPv4",
+    "useSystemHosts": false
+  },
+  "inbounds": [
+    {
+      "tag": "mixed-in",
+      "port": 10808,
+      "protocol": "mixed",
+      "settings": {
+        "udp": true,
+        "ip": "127.0.0.1"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {}
+    },
+    {
+      "tag": "dns-out",
+      "protocol": "dns"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "port": 53,
+        "network": "tcp,udp",
+        "outboundTag": "dns-out"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "outboundTag": "direct"
+      }
+    ]
+  },
+  "stats": {}
+},
+{
+  "remarks": "Serverless-Lite-2DNS-Fragment",
+  "version": {
+    "min": "26.6.27"
+  },
+  "log": {
+    "loglevel": "warning",
+    "dnsLog": false,
+    "access": "none"
+  },
+  "dns": {
+    "servers": [
+      {
+        "address": "1.1.1.1",
+        "port": 53
+      },
+      {
+        "address": "9.9.9.9",
+        "port": 53
+      }
+    ],
+    "queryStrategy": "UseIPv4",
+    "useSystemHosts": false
+  },
+  "inbounds": [
+    {
+      "tag": "mixed-in",
+      "port": 10808,
+      "protocol": "mixed",
+      "settings": {
+        "udp": true,
+        "ip": "127.0.0.1"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls"
+        ]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "dns-out",
+      "protocol": "dns"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    },
+    {
+      "tag": "tcp-fragment",
+      "protocol": "freedom",
+      "streamSettings": {
+        "sockopt": {
+          "tcpFastOpen": true
+        },
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "8",
+                  "16"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "udp-noise",
+      "protocol": "freedom",
+      "streamSettings": {
+        "finalmask": {
+          "udp": [
+            {
+              "type": "noise",
+              "settings": {
+                "reset": "4",
+                "noise": [
+                  {
+                    "rand": "40-60",
+                    "delay": "1"
+                  },
+                  {
+                    "rand": "40-60",
+                    "delay": "1"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "port": 53,
+        "network": "tcp,udp",
+        "outboundTag": "dns-out"
+      },
+      {
+        "type": "field",
+        "network": "udp",
+        "outboundTag": "udp-noise"
+      },
+      {
+        "type": "field",
+        "network": "tcp",
+        "port": 443,
+        "outboundTag": "tcp-fragment"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "outboundTag": "direct"
+      }
+    ]
+  },
+  "stats": {},
+  "policy": {
+    "system": {
+      "statsOutboundUplink": true,
+      "statsOutboundDownlink": true
+    }
+  }
+},
+{
+  "remarks": "Serverless-Direct-2DNS",
+  "version": {
+    "min": "26.6.27"
+  },
+  "log": {
+    "loglevel": "warning",
+    "dnsLog": false,
+    "access": "none"
+  },
+  "dns": {
+    "servers": [
+      {
+        "address": "1.1.1.1",
+        "port": 53
+      },
+      {
+        "address": "9.9.9.9",
+        "port": 53
+      }
+    ],
+    "queryStrategy": "UseIPv4",
+    "useSystemHosts": false
+  },
+  "inbounds": [
+    {
+      "tag": "mixed-in",
+      "port": 10808,
+      "protocol": "mixed",
+      "settings": {
+        "udp": true,
+        "ip": "127.0.0.1"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls"
+        ]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "dns-out",
+      "protocol": "dns"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "port": 53,
+        "network": "tcp,udp",
+        "outboundTag": "dns-out"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "outboundTag": "direct"
+      }
+    ]
+  },
+  "stats": {},
+  "policy": {
+    "system": {
+      "statsOutboundUplink": true,
+      "statsOutboundDownlink": true
+    }
+  }
+},
+{
+  "remarks": "Serverless-LowPing-2DNS",
+  "version": {
+    "min": "26.6.27"
+  },
+  "log": {
+    "loglevel": "warning",
+    "dnsLog": false,
+    "access": "none"
+  },
+  "dns": {
+    "servers": [
+      {
+        "address": "1.1.1.1",
+        "port": 53
+      },
+      {
+        "address": "9.9.9.9",
+        "port": 53
+      }
+    ],
+    "queryStrategy": "UseIPv4",
+    "useSystemHosts": false
+  },
+  "inbounds": [
+    {
+      "tag": "mixed-in",
+      "port": 10808,
+      "protocol": "mixed",
+      "settings": {
+        "udp": true,
+        "ip": "127.0.0.1"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls"
+        ]
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {}
+    },
+    {
+      "tag": "dns-out",
+      "protocol": "dns"
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole"
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "port": 53,
+        "network": "tcp,udp",
+        "outboundTag": "dns-out"
+      },
+      {
+        "type": "field",
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "network": "tcp,udp",
+        "outboundTag": "direct"
+      }
+    ]
+  },
+  "stats": {},
+  "policy": {
+    "system": {
+      "statsOutboundUplink": true,
+      "statsOutboundDownlink": true
+    }
+  }
+},
+{
+  "remarks": "Serverless-v50-2DNS",
+  "version": {
+    "min": "26.6.27"
+  },
+  "log": {
+    "loglevel": "warning",
+    "dnsLog": false,
+    "access": "none"
+  },
+  "policy": {
+    "levels": {
+      "0": {
+        "uplinkOnly": 0,
+        "downlinkOnly": 0
+      },
+      "12": {
+        "uplinkOnly": 0,
+        "downlinkOnly": 0,
+        "connIdle": 12
+      }
+    }
+  },
+  "dns": {
+    "servers": [
+      {
+        "address": "1.1.1.1",
+        "port": 53
+      },
+      {
+        "address": "9.9.9.9",
+        "port": 53
+      }
+    ],
+    "queryStrategy": "UseIPv4",
+    "useSystemHosts": false,
+    "serveStale": true
+  },
+  "inbounds": [
+    {
+      "tag": "mixed-in",
+      "port": 10808,
+      "protocol": "mixed",
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "tls",
+          "http",
+          "quic"
+        ],
+        "routeOnly": false
+      },
+      "settings": {
+        "udp": true,
+        "ip": "127.0.0.1"
+      },
+      "streamSettings": {
+        "sockopt": {
+          "tcpKeepAliveInterval": 1,
+          "tcpKeepAliveIdle": 11
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "block",
+      "protocol": "block"
+    },
+    {
+      "tag": "tcp-direct",
+      "protocol": "direct",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        }
+      }
+    },
+    {
+      "tag": "udp-direct",
+      "protocol": "direct",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIPv4"
+        }
+      }
+    },
+    {
+      "tag": "dns-out",
+      "protocol": "dns",
+      "settings": {
+        "userLevel": 12
+      }
+    },
+    {
+      "tag": "tcp-fragment-tls",
+      "protocol": "direct",
+      "streamSettings": {
+        "finalmask": {
+          "tcp": [
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "tlshello",
+                "lengths": [
+                  "6",
+                  "98",
+                  "1"
+                ],
+                "delays": [
+                  "0"
+                ],
+                "maxSplit": "0"
+              }
+            },
+            {
+              "type": "fragment",
+              "settings": {
+                "packets": "1-1",
+                "lengths": [
+                  "114",
+                  "1"
+                ],
+                "delays": [
+                  "1"
+                ],
+                "maxSplit": "11"
+              }
+            }
+          ]
+        },
+        "sockopt": {
+          "domainStrategy": "ForceIP",
+          "happyEyeballs": {
+            "tryDelayMs": 300,
+            "prioritizeIPv6": false,
+            "interleave": 4,
+            "maxConcurrentTry": 20
+          }
+        }
+      }
+    },
+    {
+      "tag": "udp-noises",
+      "protocol": "direct",
+      "streamSettings": {
+        "sockopt": {
+          "domainStrategy": "ForceIPv4"
+        },
+        "finalmask": {
+          "udp": [
+            {
+              "type": "noise",
+              "settings": {
+                "reset": "28",
+                "noise": [
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  },
+                  {
+                    "rand": "1200-1230",
+                    "delay": "10"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPOnDemand",
+    "rules": [
+      {
+        "outboundTag": "dns-out",
+        "port": 53
+      },
+      {
+        "outboundTag": "tcp-direct",
+        "network": "tcp",
+        "ip": [
+          "geoip:private",
+          "geoip:ir"
+        ]
+      },
+      {
+        "outboundTag": "udp-direct",
+        "network": "udp",
+        "ip": [
+          "geoip:private",
+          "geoip:ir"
+        ]
+      },
+      {
+        "outboundTag": "block",
+        "network": "udp",
+        "protocol": [
+          "quic"
+        ],
+        "ip": [
+          "0.0.0.0/0"
+        ]
+      },
+      {
+        "outboundTag": "block",
+        "network": "udp",
+        "port": "443",
+        "ip": [
+          "0.0.0.0/0"
+        ]
+      },
+      {
+        "outboundTag": "udp-noises",
+        "network": "udp",
+        "ip": [
+          "0.0.0.0/0"
+        ]
+      },
+      {
+        "outboundTag": "tcp-fragment-tls",
+        "network": "tcp",
+        "protocol": [
+          "tls"
+        ],
+        "ip": [
+          "0.0.0.0/0"
+        ]
+      },
+      {
+        "outboundTag": "tcp-fragment-tls",
+        "network": "tcp",
+        "port": "443",
+        "ip": [
+          "0.0.0.0/0"
+        ]
+      },
+      {
+        "outboundTag": "tcp-direct",
+        "network": "tcp",
+        "ip": [
+          "0.0.0.0/0"
+        ]
+      },
+      {
+        "outboundTag": "block",
+        "port": "0-65535"
+      }
+    ]
+  },
+  "stats": {}
+}
+]
